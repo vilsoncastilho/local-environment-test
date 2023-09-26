@@ -11,7 +11,7 @@ export class StateChangesRepository implements IStateChangesRepository {
     machine_name,
     order,
   }: IGetStateChangesDTO): Promise<StateChange[]> {
-    const baseQuery = `SELECT * FROM state_change`;
+    const baseQuery = `SELECT * FROM future_plastics_state_change`;
 
     const filterByMachine = machine_name
       ? ` WHERE machine_name = '${machine_name}'`
@@ -21,10 +21,12 @@ export class StateChangesRepository implements IStateChangesRepository {
       ? ` ORDER BY start_time ${order}`
       : '';
 
-    const finalQuery = baseQuery.concat(filterByMachine, filterByOrder);
+    const finalQuery = baseQuery.concat(filterByMachine);
+
+    console.log('[StateChangesRepository] (list) query: ', finalQuery)
 
     const stateChanges = await sql.query(finalQuery)
-      .then((res: sql.IResult<StateChange[]>) => res.recordset);
+      .then((res: sql.IResult<StateChange[]>) => res.recordset)
 
     return stateChanges;
   }
@@ -37,7 +39,7 @@ export class StateChangesRepository implements IStateChangesRepository {
   }: IGetStatusSumByMachineDTO): Promise<number> {
     const baseQuery = `
       SELECT SUM(duration) AS status_sum
-      FROM state_change
+      FROM future_plastics_state_change
       WHERE machine_name = '${machine_name}'
       AND status = '${status}'
     `;
@@ -52,7 +54,9 @@ export class StateChangesRepository implements IStateChangesRepository {
 
     const finalQuery = baseQuery.concat(filterByStartQuery, filterByEndQuery);
 
-    const statusSum = await sql.query(finalQuery)
+    console.log('[StateChangesRepository] (getStatusSumByMachine) query: ', baseQuery)
+
+    const statusSum = await sql.query(baseQuery)
       .then((res) => res.recordset[0].status_sum/3600)
       .catch(() => {
         throw new Error('The start_time/end_time parameter is invalid.');
